@@ -138,6 +138,22 @@ public class StoreService {
 //    Get all employees who report directly or indirectly to a particular manager
 //    This should still work for an employee who is not a manager -- they have no direct reports
 
+    public Set<Employee> allEmployees(Integer id){
+        Manager manager = this.findMan(id);
+        Set<Employee> employees = new HashSet<>();
+        for(int i = 0; i<employeRepo.findAll().size(); i++){
+            if(employeRepo.findAll().get(i).getManager().equals(manager)){
+                employees.add(employeRepo.findAll().get(i));
+            }
+        }
+        for(int i = 0; i<departmentRepo.findAll().size(); i++){
+            if(manager.getDepartment().equals(departmentRepo.findAll().get(i))){
+                employees.addAll(departmentRepo.findAll().get(i).getEmployees());
+            }
+        }
+        return employees;
+    }
+
 
     public void deleteEmployee(Integer id, Integer manId, Integer depId){
         Employee employee = this.findEmp(id);
@@ -170,10 +186,14 @@ public class StoreService {
         } else {
             for(int i=0; i<employeRepo.findAll().size(); i++){
                 if(employeRepo.findAll().get(i).getDepartment()==department){
-                    if(employeRepo.findAll().get(i).getManager()!=null){
-                        employeRepo.findAll().get(i).setManager(null);
-                        employeRepo.findAll().get(i).setDepartment(null);
-                        employeRepo.save(employeRepo.findAll().get(i));
+                    Employee employee = employeRepo.findAll().get(i);
+                    if(employee.getManager()!=null){
+                        employee.setManager(null);
+                        employee.setDepartment(null);
+                        employeRepo.save(employee);
+                    } else{
+                        employee.setDepartment(null);
+                        employeRepo.save(employee);
                     }
                 }
             }
@@ -182,9 +202,6 @@ public class StoreService {
             }
         }
 
-//    Remove all employees under a particular manager (Including indirect reports)
-//    Remove all direct reports to a manager. Any employees previously managed by the
-//    deleted employees should now be managed by the next manager up the hierarchy.
 
 
     public String employeeTitle(Integer id){
@@ -192,6 +209,99 @@ public class StoreService {
         return employee.getTitle();
     }
 
+    public void deleteAllEmployeesByManager(Integer manId) {
+        Manager manager = this.findMan(manId);
+        for(int i= 0; i<employeRepo.findAll().size(); i++){
+            if(employeRepo.findAll().get(i).getManager()==manager){
+                Employee employee = employeRepo.findAll().get(i);
+                employee.setManager(null);
+                employeRepo.save(employee);
+            }
+        }
+        for(int i =0 ; i<departmentRepo.findAll().size(); i++){
+            if(departmentRepo.findAll().get(i).getManager()==manager){
+                Department department = departmentRepo.findAll().get(i);
+                department.setManager(null);
+                departmentRepo.save(department);
+            }
+        }
+        manager.getEmployee().clear();
+        manager.setDepartment(null);
+        managerRepo.save(manager);
+        managerRepo.delete(manager);
+    }
+
+    public void deleteAllEmployeesByManagerIndirectReport(Integer manId) {
+        Manager manager = this.findMan(manId);
+        Manager newManager = managerRepo.findOne(manager.getId()+1);
+
+        for(int i = 0; i<employeRepo.findAll().size(); i++){
+            if(employeRepo.findAll().get(i).getManager().equals(manager)){
+                Employee employee = employeRepo.findAll().get(i);
+                employee.setManager(newManager);
+                newManager.getEmployee().add(employee);
+                employeRepo.save(employee);
+                managerRepo.save(newManager);
+            }
+        }
+
+        for(int i = 0; i<departmentRepo.findAll().size(); i++){
+            if(departmentRepo.findAll().get(i).getManager().equals(manager)){
+                Department department = departmentRepo.findAll().get(i);
+                department.setManager(null);
+                departmentRepo.save(department);
+            }
+        }
+
+        manager.getEmployee().clear();
+        manager.setDepartment(null);
+        managerRepo.save(manager);
+        managerRepo.delete(manager);
+
+    }
+
+    public Department departmentByName(String departmentName){
+        Department department = new Department();
+        for(int i = 0; i<departmentRepo.findAll().size(); i++){
+            if(departmentRepo.findAll().get(i).getName().equalsIgnoreCase(departmentName)) {
+                department = departmentRepo.findAll().get(i);
+            }
+        }
+        return department;
+    }
+
+    public Department mergeDepartment(String departmentName, String oldDepartmentName) {
+        Department A = this.departmentByName(departmentName);
+        Department B = this.departmentByName(oldDepartmentName);
+
+
+        A.getEmployees().addAll(B.getEmployees());
+
+        for(int i = 0; i<employeRepo.findAll().size(); i++){
+            if(employeRepo.findAll().get(i).getDepartment().equals(B)){
+                Employee employee = employeRepo.findAll().get(i);
+                employee.setDepartment(A);
+                employeRepo.save(employee);
+            }
+        }
+        for(int i = 0; i<managerRepo.findAll().size(); i++){
+            if(managerRepo.findAll().get(i).getDepartment().equals(A)){
+                Manager manager = managerRepo.findAll().get(i);
+                manager.getManagers().add(B.getManager());
+                managerRepo.save(manager);
+            }
+        }
+
+        departmentRepo.save(A);
+        departmentRepo.save(B);
+
+        return A;
+    }
+
+
 //    Merge departments (given two department names eg: A and B, move the manager of B to report to the manager of A,
 //    and update all other employees to be members of department A)
+
+
+
 }

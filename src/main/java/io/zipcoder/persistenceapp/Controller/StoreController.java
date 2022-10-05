@@ -82,6 +82,15 @@ public class StoreController {
 
 //    Get all employees who report directly or indirectly to a particular manager
 //    This should still work for an employee who is not a manager -- they have no direct reports
+    @GetMapping("/emp/allemp/{id}")
+    public Set<Employee> listEmployeesReport(@PathVariable("id") Integer id){
+        return storeService.allEmployees(id);
+    }
+
+    @GetMapping("/emp/{id}/title")
+    public String employeeTitle(@PathVariable("id") Integer id){
+        return storeService.employeeTitle(id);
+    }
 
     @DeleteMapping("/emp/{id}/{manId}/{depId}")
     public void deleteEmployee(@PathVariable("id") Integer id, @PathVariable("manId")
@@ -89,17 +98,27 @@ public class StoreController {
         storeService.deleteEmployee(id, manId, depId);
     }
 
-    //    Remove all employees under a particular manager (Including indirect reports)
-    //    Remove all direct reports to a manager. Any employees previously managed by the deleted employees should now be
-    //    managed by the next manager up the hierarchy.
 
-
-    @GetMapping("/emp/{id}/title")
-    public String employeeTitle(@PathVariable("id") Integer id){
-        return storeService.employeeTitle(id);
+    @DeleteMapping("/emp/{manId}/depId")
+    public void deleteAllEmployeesByDepartment(@PathVariable("manId") Integer manId, @PathVariable("depId") Integer depId){
+        storeService.deleteAllEmployeesByDepartment(manId,depId);
     }
 
-//    Merge departments (given two department names eg: A and B, move the manager of B to report to the manager of A,
-//    and update all other employees to be members of department A)
+
+    //    Remove all employees under a particular manager (Including indirect reports)
+    @DeleteMapping("/emp/{manId}")
+    public void deleteAllEmployeesByManager(@PathVariable("manId") Integer manId){
+        storeService.deleteAllEmployeesByManager(manId);
+    }
+
+    @DeleteMapping("/emp/{manId}/next")
+    public void deleteAllEmployeesByManagerNext(@PathVariable("manId") Integer manId){
+        storeService.deleteAllEmployeesByManagerIndirectReport(manId);
+    }
+
+    @PutMapping("/dep/{departmentName}/{oldDepartmentName}")
+    public Department departmentMerge(@PathVariable("departmentName") String departmentName, @PathVariable("oldDepartmentName") String oldDepartmentName){
+        return storeService.mergeDepartment(departmentName, oldDepartmentName);
+    }
 
 }

@@ -13,6 +13,7 @@ public class Manager {
     private String first_name;
     private String last_name;
 
+    private Set<Manager> managers;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Employee> employee;
@@ -58,5 +59,13 @@ public class Manager {
 
     public void setDepartment(Department department) {
         this.department = department;
+    }
+
+    public Set<Manager> getManagers() {
+        return managers;
+    }
+
+    public void setManagers(Set<Manager> managers) {
+        this.managers = managers;
     }
 }
